@@ -40,8 +40,9 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
 const emptyAsset: Omit<Asset, "id"> = { asset_tag: "", name: "", serial_number: "", category: "Laptop", vendor: "", location: "", status: "in_stock", condition: "good", assigned_to: null, purchase_cost: 0 };
 
 export default function AssetsPage() {
-  const { hasPrivilege } = useAuth();
-  const [assets, setAssets] = useState<Asset[]>(initialAssets);
+  const { hasPrivilege, apiFetch } = useAuth();
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
@@ -54,13 +55,32 @@ export default function AssetsPage() {
   const [form, setForm] = useState(emptyAsset);
   const [saving, setSaving] = useState(false);
 
+  const fetchAssets = async () => {
+    setLoading(true);
+    try {
+      const res = await apiFetch("/assets");
+      if (res.ok) {
+        const json = await res.json();
+        setAssets(json.data || []);
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAssets();
+  }, []);
+
   if (!hasPrivilege("view:all_assets")) {
     return <div className="flex h-[60vh] items-center justify-center"><div className="text-center"><ShieldAlert className="mx-auto h-10 w-10 text-destructive mb-4" /><h2 className="text-xl font-semibold">Access Denied</h2></div></div>;
   }
 
   const filtered = assets.filter((a) => {
     const q = search.toLowerCase();
-    const matchSearch = !search || a.name.toLowerCase().includes(q) || a.asset_tag.toLowerCase().includes(q) || a.serial_number.toLowerCase().includes(q);
+    const matchSearch = !search || a.name.toLowerCase().includes(q) || a.asset_tag.toLowerCase().includes(q) || (a.serial_number && a.serial_number.toLowerCase().includes(q));
     const matchStatus = !statusFilter || a.status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -72,30 +92,60 @@ export default function AssetsPage() {
 
   const submitAdd = async () => {
     setSaving(true);
-    const newId = String(Date.now());
-    const newAsset: Asset = { ...form, id: newId };
-    setAssets((prev) => [...prev, newAsset]);
-    toast.success("Asset created", { description: `${form.name} (${form.asset_tag}) added.` });
-    setShowAdd(false);
-    setSaving(false);
+    try {
+      const res = await apiFetch("/assets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+      });
+      if (res.ok) {
+        toast.success("Asset created", { description: `${form.name} added.` });
+        fetchAssets();
+        setShowAdd(false);
+      }
+    } catch (error) {
+      toast.error("Failed to create asset");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const submitEdit = async () => {
     if (!current) return;
     setSaving(true);
-    setAssets((prev) => prev.map((a) => (a.id === current.id ? { ...a, ...form } : a)));
-    toast.success("Asset updated", { description: `${form.name} saved.` });
-    setShowEdit(false);
-    setSaving(false);
+    try {
+      const res = await apiFetch(`/assets/${current.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+      });
+      if (res.ok) {
+        toast.success("Asset updated", { description: `${form.name} saved.` });
+        fetchAssets();
+        setShowEdit(false);
+      }
+    } catch (error) {
+      toast.error("Failed to update asset");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const submitDelete = async () => {
     if (!current) return;
     setSaving(true);
-    setAssets((prev) => prev.filter((a) => a.id !== current.id));
-    toast.success("Asset deleted", { description: `${current.name} removed.` });
-    setShowDelete(false);
-    setSaving(false);
+    try {
+      const res = await apiFetch(`/assets/${current.id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Asset deleted", { description: `${current.name} removed.` });
+        fetchAssets();
+        setShowDelete(false);
+      }
+    } catch (error) {
+      toast.error("Failed to delete asset");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const formFields = (

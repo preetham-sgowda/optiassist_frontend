@@ -46,8 +46,10 @@ const initialHistory: HistoryItem[] = [
 ];
 
 export default function AssignmentsPage() {
-  const { hasPrivilege } = useAuth();
-  const [history, setHistory] = useState<HistoryItem[]>(initialHistory);
+  const { hasPrivilege, apiFetch } = useAuth();
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [realAssets, setRealAssets] = useState<any[]>([]);
+  const [realUsers, setRealUsers] = useState<any[]>([]);
   const [showAssign, setShowAssign] = useState(false);
   const [showReturn, setShowReturn] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -55,37 +57,65 @@ export default function AssignmentsPage() {
   const [assignForm, setAssignForm] = useState({ asset: "", employee: "", notes: "" });
   const [returnForm, setReturnForm] = useState({ asset: "", notes: "" });
 
+  const fetchData = async () => {
+    try {
+      // Fetch available assets
+      const assetRes = await apiFetch("/assets?status=in_stock");
+      if (assetRes.ok) {
+        const json = await assetRes.json();
+        setRealAssets(json.data || []);
+      }
+
+      // Fetch users (employees)
+      const userRes = await apiFetch("/auth/users");
+      if (userRes.ok) {
+        const json = await userRes.json();
+        setRealUsers(json || []);
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   if (!hasPrivilege("manage:assignments")) {
     return <div className="flex h-[60vh] items-center justify-center"><div className="text-center"><ShieldAlert className="mx-auto h-10 w-10 text-destructive mb-4" /><h2 className="text-xl font-semibold">Access Denied</h2></div></div>;
   }
 
-  const submitAssign = () => {
+  const submitAssign = async () => {
     setSaving(true);
-    const asset = availableAssets.find((a) => a.tag === assignForm.asset);
-    const emp = employees.find((e) => e.code === assignForm.employee);
-    const entry: HistoryItem = {
-      id: Date.now(), asset: `${asset?.tag} — ${asset?.name}`,
-      employee: emp?.name || "", type: "assign",
-      date: new Date().toISOString().split("T")[0], notes: assignForm.notes,
-    };
-    setHistory((prev) => [entry, ...prev]);
-    toast.success("Asset assigned", { description: `${asset?.name} assigned to ${emp?.name}.` });
-    setAssignForm({ asset: "", employee: "", notes: "" });
-    setShowAssign(false); setSaving(false);
+    try {
+      const asset = realAssets.find((a) => a.asset_tag === assignForm.asset);
+      const user = realUsers.find((u) => u.id === assignForm.employee);
+      
+      const res = await apiFetch(`/assets/${asset.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "assigned",
+          assigned_to: user.id
+        })
+      });
+
+      if (res.ok) {
+        toast.success("Asset assigned", { description: `${asset.name} assigned to ${user.full_name}.` });
+        fetchData();
+        setShowAssign(false);
+      }
+    } catch (error) {
+      toast.error("Failed to assign asset");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const submitReturn = () => {
-    setSaving(true);
-    const asset = assignedAssets.find((a) => a.tag === returnForm.asset);
-    const entry: HistoryItem = {
-      id: Date.now(), asset: `${asset?.tag} — ${asset?.name}`,
-      employee: asset?.holder || "", type: "return",
-      date: new Date().toISOString().split("T")[0], notes: returnForm.notes,
-    };
-    setHistory((prev) => [entry, ...prev]);
-    toast.success("Asset returned", { description: `${asset?.name} returned to inventory.` });
-    setReturnForm({ asset: "", notes: "" });
-    setShowReturn(false); setSaving(false);
+  const submitReturn = async () => {
+    // Return logic would go here
+    toast.info("Return logic coming soon");
+    setShowReturn(false);
   };
 
   return (
@@ -139,13 +169,13 @@ export default function AssignmentsPage() {
           <div className="space-y-2"><Label>Asset</Label>
             <Select value={assignForm.asset} onValueChange={(v) => setAssignForm({ ...assignForm, asset: v || "" })}>
               <SelectTrigger><SelectValue placeholder="Select an asset..." /></SelectTrigger>
-              <SelectContent>{availableAssets.map((a) => <SelectItem key={a.tag} value={a.tag}>{a.tag} — {a.name}</SelectItem>)}</SelectContent>
+              <SelectContent>{realAssets.map((a) => <SelectItem key={a.asset_tag} value={a.asset_tag}>{a.asset_tag} — {a.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-2"><Label>Employee</Label>
             <Select value={assignForm.employee} onValueChange={(v) => setAssignForm({ ...assignForm, employee: v || "" })}>
               <SelectTrigger><SelectValue placeholder="Select an employee..." /></SelectTrigger>
-              <SelectContent>{employees.map((e) => <SelectItem key={e.code} value={e.code}>{e.code} — {e.name}</SelectItem>)}</SelectContent>
+              <SelectContent>{realUsers.map((u) => <SelectItem key={u.id} value={u.id}>{u.full_name} ({u.email})</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-2"><Label>Notes</Label><Textarea value={assignForm.notes} onChange={(e) => setAssignForm({ ...assignForm, notes: e.target.value })} placeholder="Reason for assignment..." /></div>

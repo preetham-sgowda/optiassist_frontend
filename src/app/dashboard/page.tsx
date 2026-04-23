@@ -8,33 +8,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
-  const { hasPrivilege } = useAuth();
+  const { hasPrivilege, apiFetch } = useAuth();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, you would fetch from /dashboard/stats using the token
-    // For demo purposes, we will mock the data
     const fetchStats = async () => {
       setLoading(true);
-      // Simulate API call
-      setTimeout(() => {
-        setStats({
-          total_assets: 1420,
-          assigned_assets: 1150,
-          in_stock_assets: 200,
-          in_repair_assets: 45,
-          retired_assets: 25,
-          total_employees: 1050,
-          recent_assignments: [
-            { asset_tag: "MAC-001", name: "MacBook Pro M3", assigned_to: "Aalishan N", status: "assigned", date: "2026-04-22" },
-            { asset_tag: "MON-042", name: "Dell UltraSharp 27", assigned_to: "Ben S", status: "assigned", date: "2026-04-21" },
-            { asset_tag: "PHO-112", name: "iPhone 15 Pro", assigned_to: "Sarah J", status: "assigned", date: "2026-04-20" },
-            { asset_tag: "TAB-009", name: "iPad Air", assigned_to: "Mike T", status: "assigned", date: "2026-04-18" },
-          ]
-        });
+      try {
+        const res = await apiFetch("/dashboard/stats");
+        if (res.ok) {
+          const json = await res.json();
+          setStats(json);
+        }
+      } catch (error) {
+        console.error("Dashboard fetch error:", error);
+      } finally {
         setLoading(false);
-      }, 500);
+      }
     };
 
     fetchStats();

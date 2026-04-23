@@ -25,6 +25,7 @@ interface AuthContextType {
   hasPrivilege: (privilege: string) => boolean;
   isLoading: boolean;
   logout: () => Promise<void>;
+  apiFetch: (endpoint: string, options?: RequestInit) => Promise<Response>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -107,13 +108,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return permissions.includes(privilege);
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
+  const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    
+    const url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+    
+    return fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, role, permissions, hasPrivilege, isLoading, logout }}
+      value={{ user, role, permissions, hasPrivilege, isLoading, logout, apiFetch }}
     >
       {children}
     </AuthContext.Provider>

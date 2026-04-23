@@ -40,8 +40,9 @@ const statusMap: Record<string, { label: string; variant: "default" | "outline" 
 const emptyEmp = { code: "", name: "", email: "", title: "", dept: "Engineering", location: "", status: "active" };
 
 export default function EmployeesPage() {
-  const { hasPrivilege } = useAuth();
-  const [employees, setEmployees] = useState<Employee[]>(initialEmployees);
+  const { hasPrivilege, apiFetch } = useAuth();
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
@@ -51,39 +52,96 @@ export default function EmployeesPage() {
   const [form, setForm] = useState(emptyEmp);
   const [saving, setSaving] = useState(false);
 
+  const fetchEmployees = async () => {
+    setLoading(true);
+    try {
+      const res = await apiFetch("/employees");
+      if (res.ok) {
+        const json = await res.json();
+        setEmployees(json.data || []);
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
   if (!hasPrivilege("view:all_employees")) {
     return <div className="flex h-[60vh] items-center justify-center"><div className="text-center"><ShieldAlert className="mx-auto h-10 w-10 text-destructive mb-4" /><h2 className="text-xl font-semibold">Access Denied</h2></div></div>;
   }
 
-  const filtered = employees.filter((e) => !search || e.name.toLowerCase().includes(search.toLowerCase()) || e.email.toLowerCase().includes(search.toLowerCase()) || e.code.toLowerCase().includes(search.toLowerCase()));
+  const filtered = employees.filter((e) => !search || e.name.toLowerCase().includes(search.toLowerCase()) || e.email.toLowerCase().includes(search.toLowerCase()) || (e.code && e.code.toLowerCase().includes(search.toLowerCase())));
 
-  const handleAdd = () => { setForm({ ...emptyEmp, code: `EMP-${String(employees.length + 1).padStart(3, "0")}` }); setShowAdd(true); };
+  const handleAdd = () => { setForm({ ...emptyEmp }); setShowAdd(true); };
   const handleEdit = (e: Employee) => { setCurrent(e); setForm({ ...e }); setShowEdit(true); };
   const handleView = (e: Employee) => { setCurrent(e); setShowView(true); };
   const handleDeactivate = (e: Employee) => { setCurrent(e); setShowDeactivate(true); };
 
-  const submitAdd = () => {
+  const submitAdd = async () => {
     setSaving(true);
-    const newEmp: Employee = { ...form, id: String(Date.now()) };
-    setEmployees((prev) => [...prev, newEmp]);
-    toast.success("Employee registered", { description: `${form.name} added successfully.` });
-    setShowAdd(false); setSaving(false);
+    try {
+      const res = await apiFetch("/employees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+      });
+      if (res.ok) {
+        toast.success("Employee registered", { description: `${form.name} added successfully.` });
+        fetchEmployees();
+        setShowAdd(false);
+      }
+    } catch (error) {
+      toast.error("Failed to register employee");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const submitEdit = () => {
+  const submitEdit = async () => {
     if (!current) return;
     setSaving(true);
-    setEmployees((prev) => prev.map((e) => (e.id === current.id ? { ...e, ...form } : e)));
-    toast.success("Employee updated", { description: `${form.name} saved.` });
-    setShowEdit(false); setSaving(false);
+    try {
+      const res = await apiFetch(`/employees/${current.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+      });
+      if (res.ok) {
+        toast.success("Employee updated", { description: `${form.name} saved.` });
+        fetchEmployees();
+        setShowEdit(false);
+      }
+    } catch (error) {
+      toast.error("Failed to update employee");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const submitDeactivate = () => {
+  const submitDeactivate = async () => {
     if (!current) return;
     setSaving(true);
-    setEmployees((prev) => prev.map((e) => (e.id === current.id ? { ...e, status: "inactive" } : e)));
-    toast.success("Employee deactivated", { description: `${current.name} has been deactivated.` });
-    setShowDeactivate(false); setSaving(false);
+    try {
+      const res = await apiFetch(`/employees/${current.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "inactive" })
+      });
+      if (res.ok) {
+        toast.success("Employee deactivated", { description: `${current.name} has been deactivated.` });
+        fetchEmployees();
+        setShowDeactivate(false);
+      }
+    } catch (error) {
+      toast.error("Failed to deactivate employee");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const formFields = (

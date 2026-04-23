@@ -137,13 +137,13 @@ export default function AssignmentsPage() {
       <Dialog open={showAssign} onOpenChange={setShowAssign}><DialogContent><DialogHeader><DialogTitle>Assign Asset to Employee</DialogTitle><DialogDescription>Select an available asset and the target employee.</DialogDescription></DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2"><Label>Asset</Label>
-            <Select value={assignForm.asset} onValueChange={(v) => setAssignForm({ ...assignForm, asset: v })}>
+            <Select value={assignForm.asset} onValueChange={(v) => setAssignForm({ ...assignForm, asset: v || "" })}>
               <SelectTrigger><SelectValue placeholder="Select an asset..." /></SelectTrigger>
               <SelectContent>{availableAssets.map((a) => <SelectItem key={a.tag} value={a.tag}>{a.tag} — {a.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-2"><Label>Employee</Label>
-            <Select value={assignForm.employee} onValueChange={(v) => setAssignForm({ ...assignForm, employee: v })}>
+            <Select value={assignForm.employee} onValueChange={(v) => setAssignForm({ ...assignForm, employee: v || "" })}>
               <SelectTrigger><SelectValue placeholder="Select an employee..." /></SelectTrigger>
               <SelectContent>{employees.map((e) => <SelectItem key={e.code} value={e.code}>{e.code} — {e.name}</SelectItem>)}</SelectContent>
             </Select>
@@ -157,7 +157,7 @@ export default function AssignmentsPage() {
       <Dialog open={showReturn} onOpenChange={setShowReturn}><DialogContent><DialogHeader><DialogTitle>Return Asset to Inventory</DialogTitle><DialogDescription>Select the asset being returned.</DialogDescription></DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2"><Label>Asset</Label>
-            <Select value={returnForm.asset} onValueChange={(v) => setReturnForm({ ...returnForm, asset: v })}>
+            <Select value={returnForm.asset} onValueChange={(v) => setReturnForm({ ...returnForm, asset: v || "" })}>
               <SelectTrigger><SelectValue placeholder="Select an asset..." /></SelectTrigger>
               <SelectContent>{assignedAssets.map((a) => <SelectItem key={a.tag} value={a.tag}>{a.tag} — {a.name} (held by {a.holder})</SelectItem>)}</SelectContent>
             </Select>

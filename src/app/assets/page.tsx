@@ -107,7 +107,7 @@ export default function AssetsPage() {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2"><Label>Serial Number</Label><Input value={form.serial_number} onChange={(e) => setForm({ ...form, serial_number: e.target.value })} /></div>
         <div className="space-y-2"><Label>Category</Label>
-          <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+          <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v || "" })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>{["Laptop", "Monitor", "Mobile", "Tablet", "Peripheral", "Server"].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
           </Select>
@@ -119,13 +119,13 @@ export default function AssetsPage() {
       </div>
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2"><Label>Status</Label>
-          <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+          <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v || "" })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>{["in_stock", "assigned", "in_repair", "retired"].map((s) => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div className="space-y-2"><Label>Condition</Label>
-          <Select value={form.condition} onValueChange={(v) => setForm({ ...form, condition: v })}>
+          <Select value={form.condition} onValueChange={(v) => setForm({ ...form, condition: v || "" })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>{["excellent", "good", "fair", "poor"].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
           </Select>
@@ -174,7 +174,7 @@ export default function AssetsPage() {
                 <TableCell><Badge variant={s.variant}>{s.label}</Badge></TableCell>
                 <TableCell className="hidden lg:table-cell">{asset.assigned_to || <span className="text-muted-foreground">—</span>}</TableCell>
                 <TableCell className="text-right">
-                  <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                  <DropdownMenu><DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground focus:outline-none"><MoreHorizontal className="h-4 w-4" /></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleView(asset)}><Eye className="mr-2 h-4 w-4" /> View</DropdownMenuItem>
                       {hasPrivilege("manage:assets") && <DropdownMenuItem onClick={() => handleEdit(asset)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>}

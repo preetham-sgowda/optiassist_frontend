@@ -85,19 +85,19 @@ export default function SettingsPage() {
     switch (activeTab) {
       case "departments":
         if (isEdit) setDepts((p) => p.map((d) => d.id === editingId ? { ...d, ...form } : d));
-        else setDepts((p) => [...p, { ...form, id: Date.now() }]);
+        else setDepts((p) => [...p, { ...form, id: Date.now() } as any]);
         break;
       case "locations":
         if (isEdit) setLocs((p) => p.map((l) => l.id === editingId ? { ...l, ...form } : l));
-        else setLocs((p) => [...p, { ...form, id: Date.now(), active: true }]);
+        else setLocs((p) => [...p, { ...form, id: Date.now(), active: true } as any]);
         break;
       case "vendors":
         if (isEdit) setVendors((p) => p.map((v) => v.id === editingId ? { ...v, ...form } : v));
-        else setVendors((p) => [...p, { ...form, id: Date.now() }]);
+        else setVendors((p) => [...p, { ...form, id: Date.now() } as any]);
         break;
       case "categories":
         if (isEdit) setCats((p) => p.map((c) => c.id === editingId ? { ...c, ...form } : c));
-        else setCats((p) => [...p, { ...form, id: Date.now(), count: 0 }]);
+        else setCats((p) => [...p, { ...form, id: Date.now(), count: 0 } as any]);
         break;
     }
     toast.success(isEdit ? "Updated successfully" : "Created successfully", { description: `${form.name} ${isEdit ? "saved" : "added"}.` });

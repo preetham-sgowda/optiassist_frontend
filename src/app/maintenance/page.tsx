@@ -85,7 +85,7 @@ export default function MaintenancePage() {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2"><Label>Type</Label>
-          <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["Repair", "Upgrade", "Cleaning", "Inspection"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
+          <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v || "" })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["Repair", "Upgrade", "Cleaning", "Inspection"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
         </div>
         <div className="space-y-2"><Label>Vendor</Label><Input value={form.vendor} onChange={(e) => setForm({ ...form, vendor: e.target.value })} /></div>
       </div>

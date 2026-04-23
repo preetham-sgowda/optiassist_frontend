@@ -53,12 +53,10 @@ export function TopNavbar() {
           </Button>
 
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+            <DropdownMenuTrigger className="relative h-9 w-9 rounded-full focus:outline-none focus-visible:ring-1 focus-visible:ring-ring hover:bg-accent hover:text-accent-foreground">
                 <Avatar className="h-9 w-9 border"><AvatarFallback className="bg-primary/10 text-primary">{initials}</AvatarFallback></Avatar>
-              </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuContent className="w-56" align="end">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">{user.full_name}</p>

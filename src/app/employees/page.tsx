@@ -98,7 +98,7 @@ export default function EmployeesPage() {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2"><Label>Department</Label>
-          <Select value={form.dept} onValueChange={(v) => setForm({ ...form, dept: v })}>
+          <Select value={form.dept} onValueChange={(v) => setForm({ ...form, dept: v || "" })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>{["IT", "Engineering", "Product", "Design", "HR", "Finance", "Analytics", "Marketing"].map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
           </Select>
@@ -136,7 +136,7 @@ export default function EmployeesPage() {
                 <TableCell><Badge variant="secondary">{emp.dept}</Badge></TableCell>
                 <TableCell><Badge variant={s.variant}>{s.label}</Badge></TableCell>
                 <TableCell className="text-right">
-                  <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                  <DropdownMenu><DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground focus:outline-none"><MoreHorizontal className="h-4 w-4" /></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleView(emp)}><Eye className="mr-2 h-4 w-4" /> View</DropdownMenuItem>
                       {hasPrivilege("manage:employees") && <DropdownMenuItem onClick={() => handleEdit(emp)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>}

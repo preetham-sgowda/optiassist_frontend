@@ -91,7 +91,7 @@ export default function MyGearPage() {
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label>Severity</Label>
-              <Select value={reportForm.severity} onValueChange={(v) => setReportForm({ ...reportForm, severity: v })}>
+              <Select value={reportForm.severity} onValueChange={(v) => setReportForm({ ...reportForm, severity: v || "" })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="low">Low — Cosmetic / Minor</SelectItem>

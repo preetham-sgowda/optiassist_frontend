@@ -108,6 +108,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return permissions.includes(privilege);
   };
 
+  const logout = async () => {
+    await supabase.auth.signOut();
+  };
+
   const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;

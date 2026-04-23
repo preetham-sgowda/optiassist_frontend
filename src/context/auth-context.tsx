@@ -39,24 +39,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // 1. Check for real Supabase session
+        // Check for real Supabase session
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
           await fetchUserProfile(session.access_token);
         } else {
-          // 2. MOCK FALLBACK for preview purposes (?role=admin or ?role=employee)
-          const params = new URLSearchParams(window.location.search);
-          const mockRole = params.get('role');
-          
-          if (mockRole === 'admin') {
-            setUser({ id: '1', full_name: 'Aalishan N', email: 'admin@optiasset.com', role_id: '1', department: 'IT' });
-            setRole({ id: '1', name: 'admin', permissions: ['manage:assets', 'manage:employees', 'manage:assignments', 'manage:maintenance', 'manage:settings', 'view:dashboard', 'view:all_assets', 'view:all_employees', 'view:my_gear'] });
-            setPermissions(['manage:assets', 'manage:employees', 'manage:assignments', 'manage:maintenance', 'manage:settings', 'view:dashboard', 'view:all_assets', 'view:all_employees', 'view:my_gear']);
-          } else if (mockRole === 'employee') {
-            setUser({ id: '2', full_name: 'Ben Sullivan', email: 'ben@optiasset.com', role_id: '3', department: 'Engineering' });
-            setRole({ id: '3', name: 'employee', permissions: ['view:my_gear'] });
-            setPermissions(['view:my_gear']);
+          setUser(null);
+          setRole(null);
+          setPermissions([]);
+          if (window.location.pathname !== '/login') {
+            router.push('/login');
           }
         }
       } catch (error) {

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // For now, allow all routes through since we are using mock auth.
   // When Supabase is connected, replace this with proper session checks.
   const isPublicRoute = request.nextUrl.pathname.startsWith('/login')

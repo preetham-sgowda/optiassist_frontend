@@ -95,9 +95,12 @@ export function TopNavbar() {
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm border-t pt-4">
             <div><p className="text-muted-foreground">Department</p><p className="font-medium">{user.department || "N/A"}</p></div>
-            <div><p className="text-muted-foreground">Role</p><p className="font-medium capitalize">{role?.name}</p></div>
+            <div><p className="text-muted-foreground">Role</p><p className="font-medium capitalize">{role?.name || "None"}</p></div>
             <div className="col-span-2"><p className="text-muted-foreground">Permissions</p>
-              <div className="flex flex-wrap gap-1 mt-1">{role?.permissions.slice(0, 6).map((p: string) => <Badge key={p} variant="outline" className="text-xs">{p}</Badge>)}{(role?.permissions.length || 0) > 6 && <Badge variant="outline" className="text-xs">+{(role?.permissions.length || 0) - 6} more</Badge>}</div>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {(role?.permissions || []).slice(0, 6).map((p: string) => <Badge key={p} variant="outline" className="text-xs">{p}</Badge>)}
+                {((role?.permissions || []).length) > 6 && <Badge variant="outline" className="text-xs">+{(role?.permissions?.length || 0) - 6} more</Badge>}
+              </div>
             </div>
           </div>
           <DialogFooter>

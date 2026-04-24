@@ -1,14 +1,16 @@
 "use client";
 
+import { useEffect } from "react";
 import { useAuth } from "@/context/auth-context";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Sidebar } from "./sidebar";
 import { TopNavbar } from "./top-navbar";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
 
   // Don't wrap login page with shell
   if (pathname === "/login") {
@@ -24,10 +26,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // If not authenticated and not loading, we'll let middleware handle the redirect,
-  // but just in case, render nothing or children (which will be a redirect page)
+  // If not authenticated, redirect to login and show nothing
   if (!user) {
-    return <>{children}</>;
+    router.replace("/login");
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   return (

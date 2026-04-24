@@ -55,6 +55,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
+        setUser(null);
+        setRole(null);
+        setPermissions([]);
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          router.push('/login');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -101,6 +107,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
+      // Network error fetching profile — sign out so user gets redirected to login
+      await supabase.auth.signOut();
     }
   };
 

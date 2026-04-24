@@ -18,6 +18,7 @@ interface Asset {
   id: string; asset_tag: string; name: string; serial_number: string;
   category: string; vendor: string; location: string; status: string;
   condition: string; assigned_to: string | null; purchase_cost: number;
+  profiles?: { full_name: string } | null;
 }
 
 const initialAssets: Asset[] = [
@@ -62,6 +63,9 @@ export default function AssetsPage() {
       if (res.ok) {
         const json = await res.json();
         setAssets(json.data || []);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error("Failed to load assets", { description: err.error || res.statusText });
       }
     } catch (error) {
       console.error("Fetch error:", error);
@@ -222,7 +226,7 @@ export default function AssetsPage() {
                 <TableCell className="font-medium">{asset.name}</TableCell>
                 <TableCell className="hidden md:table-cell text-muted-foreground">{asset.category}</TableCell>
                 <TableCell><Badge variant={s.variant}>{s.label}</Badge></TableCell>
-                <TableCell className="hidden lg:table-cell">{asset.assigned_to || <span className="text-muted-foreground">—</span>}</TableCell>
+                <TableCell className="hidden lg:table-cell">{asset.profiles?.full_name || (asset.assigned_to ? "Unknown" : <span className="text-muted-foreground">—</span>)}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu><DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground focus:outline-none"><MoreHorizontal className="h-4 w-4" /></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -254,7 +258,7 @@ export default function AssetsPage() {
         <div><p className="text-muted-foreground">Status</p><Badge variant={statusConfig[current.status]?.variant || "outline"}>{statusConfig[current.status]?.label || current.status}</Badge></div>
         <div><p className="text-muted-foreground">Condition</p><p className="font-medium capitalize">{current.condition}</p></div>
         <div><p className="text-muted-foreground">Purchase Cost</p><p className="font-medium">${current.purchase_cost.toLocaleString()}</p></div>
-        <div className="col-span-2"><p className="text-muted-foreground">Assigned To</p><p className="font-medium">{current.assigned_to || "Unassigned"}</p></div>
+        <div className="col-span-2"><p className="text-muted-foreground">Assigned To</p><p className="font-medium">{current.profiles?.full_name || (current.assigned_to ? "Unknown" : "Unassigned")}</p></div>
       </div>}<DialogFooter><Button variant="outline" onClick={() => setShowView(false)}>Close</Button></DialogFooter></DialogContent></Dialog>
 
       {/* DELETE DIALOG */}

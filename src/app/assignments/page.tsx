@@ -14,42 +14,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowRight, ArrowLeft, ShieldAlert, Package, User, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 
-const availableAssets = [
-  { tag: "MAC-002", name: "MacBook Air M2" },
-  { tag: "KEY-088", name: "Logitech MX Keys S" },
-  { tag: "DOC-005", name: "CalDigit TS4 Dock" },
-];
-
-const employees = [
-  { code: "EMP-001", name: "Aalishan N" },
-  { code: "EMP-002", name: "Ben Sullivan" },
-  { code: "EMP-003", name: "Sarah Johnson" },
-  { code: "EMP-004", name: "Mike Thompson" },
-  { code: "EMP-005", name: "Emma Liu" },
-];
-
-const assignedAssets = [
-  { tag: "MAC-001", name: "MacBook Pro 16 M3 Max", holder: "Aalishan N" },
-  { tag: "MON-042", name: "Dell UltraSharp U2723QE", holder: "Ben S" },
-  { tag: "PHO-112", name: "iPhone 15 Pro Max", holder: "Sarah J" },
-  { tag: "TAB-009", name: "iPad Pro 12.9 M2", holder: "Mike T" },
-];
-
-interface HistoryItem { id: number; asset: string; employee: string; type: string; date: string; notes: string; }
-
-const initialHistory: HistoryItem[] = [
-  { id: 1, asset: "MAC-001 — MacBook Pro 16", employee: "Aalishan N", type: "assign", date: "2026-04-22", notes: "New hire onboarding" },
-  { id: 2, asset: "MON-042 — Dell UltraSharp 27", employee: "Ben S", type: "assign", date: "2026-04-21", notes: "Workstation setup" },
-  { id: 3, asset: "LAP-033 — ThinkPad X1 Carbon", employee: "David K", type: "return", date: "2026-04-20", notes: "Employee offboarding" },
-  { id: 4, asset: "PHO-112 — iPhone 15 Pro", employee: "Sarah J", type: "assign", date: "2026-04-20", notes: "Device upgrade" },
-  { id: 5, asset: "TAB-009 — iPad Pro 12.9", employee: "Mike T", type: "assign", date: "2026-04-18", notes: "Design team equipment" },
-];
+interface AssignedAsset {
+  id: string;
+  asset_tag: string;
+  name: string;
+  status: string;
+  updated_at: string;
+  profiles?: { full_name: string } | null;
+}
 
 export default function AssignmentsPage() {
   const { hasPrivilege, apiFetch } = useAuth();
-  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [realAssets, setRealAssets] = useState<any[]>([]);
   const [realUsers, setRealUsers] = useState<any[]>([]);
+  const [assignedAssets, setAssignedAssets] = useState<AssignedAsset[]>([]);
   const [showAssign, setShowAssign] = useState(false);
   const [showReturn, setShowReturn] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -59,18 +37,25 @@ export default function AssignmentsPage() {
 
   const fetchData = async () => {
     try {
-      // Fetch available assets
+      // Fetch available (in_stock) assets for assignment
       const assetRes = await apiFetch("/assets?status=in_stock");
       if (assetRes.ok) {
         const json = await assetRes.json();
         setRealAssets(json.data || []);
       }
 
-      // Fetch users (employees)
+      // Fetch users (profiles) for the employee dropdown
       const userRes = await apiFetch("/auth/users");
       if (userRes.ok) {
         const json = await userRes.json();
         setRealUsers(json || []);
+      }
+
+      // Fetch currently assigned assets for the history table
+      const assignedRes = await apiFetch("/assets?status=assigned");
+      if (assignedRes.ok) {
+        const json = await assignedRes.json();
+        setAssignedAssets(json.data || []);
       }
     } catch (error) {
       console.error("Fetch error:", error);
@@ -90,7 +75,13 @@ export default function AssignmentsPage() {
     try {
       const asset = realAssets.find((a) => a.asset_tag === assignForm.asset);
       const user = realUsers.find((u) => u.id === assignForm.employee);
-      
+
+      if (!asset || !user) {
+        toast.error("Please select both an asset and an employee.");
+        setSaving(false);
+        return;
+      }
+
       const res = await apiFetch(`/assets/${asset.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -102,8 +93,12 @@ export default function AssignmentsPage() {
 
       if (res.ok) {
         toast.success("Asset assigned", { description: `${asset.name} assigned to ${user.full_name}.` });
+        setAssignForm({ asset: "", employee: "", notes: "" });
         fetchData();
         setShowAssign(false);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error("Failed to assign asset", { description: err.detail || err.error || res.statusText });
       }
     } catch (error) {
       toast.error("Failed to assign asset");
@@ -113,9 +108,39 @@ export default function AssignmentsPage() {
   };
 
   const submitReturn = async () => {
-    // Return logic would go here
-    toast.info("Return logic coming soon");
-    setShowReturn(false);
+    setSaving(true);
+    try {
+      const asset = assignedAssets.find((a) => a.asset_tag === returnForm.asset);
+
+      if (!asset) {
+        toast.error("Please select an asset to return.");
+        setSaving(false);
+        return;
+      }
+
+      const res = await apiFetch(`/assets/${asset.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "in_stock",
+          assigned_to: null
+        })
+      });
+
+      if (res.ok) {
+        toast.success("Asset returned", { description: `${asset.name} returned to inventory.` });
+        setReturnForm({ asset: "", notes: "" });
+        fetchData();
+        setShowReturn(false);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error("Failed to return asset", { description: err.detail || err.error || res.statusText });
+      }
+    } catch (error) {
+      toast.error("Failed to return asset");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -148,18 +173,21 @@ export default function AssignmentsPage() {
         </Card>
       </div>
 
-      <Card><CardHeader><CardTitle>Recent Assignment History</CardTitle><CardDescription>Latest asset movements.</CardDescription></CardHeader>
+      <Card><CardHeader><CardTitle>Currently Assigned Assets</CardTitle><CardDescription>All assets currently deployed to employees.</CardDescription></CardHeader>
         <CardContent className="p-0"><Table>
-          <TableHeader><TableRow><TableHead>Type</TableHead><TableHead>Asset</TableHead><TableHead>Employee</TableHead><TableHead className="hidden md:table-cell">Notes</TableHead><TableHead>Date</TableHead></TableRow></TableHeader>
-          <TableBody>{history.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell><Badge variant={item.type === "assign" ? "default" : "outline"} className={item.type === "assign" ? "bg-emerald-600" : ""}>{item.type === "assign" ? "→ Assigned" : "← Returned"}</Badge></TableCell>
-              <TableCell className="font-medium">{item.asset}</TableCell>
-              <TableCell>{item.employee}</TableCell>
-              <TableCell className="hidden md:table-cell text-muted-foreground">{item.notes}</TableCell>
-              <TableCell className="text-muted-foreground">{item.date}</TableCell>
-            </TableRow>
-          ))}</TableBody>
+          <TableHeader><TableRow><TableHead>Asset</TableHead><TableHead>Name</TableHead><TableHead>Assigned To</TableHead><TableHead>Date</TableHead></TableRow></TableHeader>
+          <TableBody>
+            {assignedAssets.length === 0 ? (
+              <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No assets currently assigned.</TableCell></TableRow>
+            ) : assignedAssets.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell className="font-mono text-xs font-semibold">{item.asset_tag}</TableCell>
+                <TableCell className="font-medium">{item.name}</TableCell>
+                <TableCell>{item.profiles?.full_name || "Unknown"}</TableCell>
+                <TableCell className="text-muted-foreground">{new Date(item.updated_at).toLocaleDateString()}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
         </Table></CardContent>
       </Card>
 
@@ -189,12 +217,12 @@ export default function AssignmentsPage() {
           <div className="space-y-2"><Label>Asset</Label>
             <Select value={returnForm.asset} onValueChange={(v) => setReturnForm({ ...returnForm, asset: v || "" })}>
               <SelectTrigger><SelectValue placeholder="Select an asset..." /></SelectTrigger>
-              <SelectContent>{assignedAssets.map((a) => <SelectItem key={a.tag} value={a.tag}>{a.tag} — {a.name} (held by {a.holder})</SelectItem>)}</SelectContent>
+              <SelectContent>{assignedAssets.map((a) => <SelectItem key={a.asset_tag} value={a.asset_tag}>{a.asset_tag} — {a.name} (held by {a.profiles?.full_name || "Unknown"})</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-2"><Label>Notes</Label><Textarea value={returnForm.notes} onChange={(e) => setReturnForm({ ...returnForm, notes: e.target.value })} placeholder="Reason for return..." /></div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={() => setShowReturn(false)}>Cancel</Button><Button onClick={submitReturn} disabled={saving || !returnForm.asset} className="border-amber-500 text-amber-600 hover:bg-amber-50">{saving ? "Processing..." : "Confirm Return"}</Button></DialogFooter>
+        <DialogFooter><Button variant="outline" onClick={() => setShowReturn(false)}>Cancel</Button><Button onClick={submitReturn} disabled={saving || !returnForm.asset} variant="outline" className="border-amber-500 text-amber-600 hover:bg-amber-50">{saving ? "Processing..." : "Confirm Return"}</Button></DialogFooter>
       </DialogContent></Dialog>
     </div>
   );

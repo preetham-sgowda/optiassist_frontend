@@ -100,7 +100,12 @@ export function TopNavbar() {
               <div className="flex flex-wrap gap-1 mt-1">{role?.permissions.slice(0, 6).map((p: string) => <Badge key={p} variant="outline" className="text-xs">{p}</Badge>)}{(role?.permissions.length || 0) > 6 && <Badge variant="outline" className="text-xs">+{(role?.permissions.length || 0) - 6} more</Badge>}</div>
             </div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setShowProfile(false)}>Close</Button></DialogFooter>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowProfile(false)}>Close</Button>
+            <Button variant="destructive" onClick={() => { setShowProfile(false); handleLogout(); }}>
+              <LogOut className="mr-2 h-4 w-4" /> Log out
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

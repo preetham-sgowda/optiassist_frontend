@@ -19,12 +19,13 @@ export function TopNavbar() {
 
   if (!user) return null;
 
-  const initials = user.full_name
+  const initials = (user.full_name || "?")
     .split(" ")
+    .filter(Boolean)
     .map((n: string) => n[0])
     .join("")
     .toUpperCase()
-    .substring(0, 2);
+    .substring(0, 2) || "?";
 
   const handleLogout = async () => {
     await logout();
